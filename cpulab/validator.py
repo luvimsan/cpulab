@@ -1,6 +1,12 @@
 def validate_input(pid, arrival, burst, priority, existing_ids):
     """Safely validates user input before adding a process."""
 
+    # Strip whitespace so that "   " is treated as empty
+    pid = pid.strip()
+    arrival = arrival.strip()
+    burst = burst.strip()
+    priority = priority.strip()
+
     if not pid or not arrival or not burst or not priority:
         return False, "All fields (ID, Arrival, Burst, Priority) are required."
 
