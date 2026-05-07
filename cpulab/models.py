@@ -1,10 +1,9 @@
-# src/cpulab/models.py
-
 class Scheduler:
     @staticmethod
     def calculate_metrics(schedule):
         """Calculates averages for the generated schedule."""
-        if not schedule: return 0, 0, 0
+        if not schedule:
+            return 0, 0, 0
         avg_wt = sum(p['wt'] for p in schedule) / len(schedule)
         avg_tat = sum(p['tat'] for p in schedule) / len(schedule)
         avg_rt = sum(p['rt'] for p in schedule) / len(schedule)
