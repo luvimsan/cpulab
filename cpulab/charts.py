@@ -1,57 +1,100 @@
-# src/cpulab/charts.py
 import tkinter as tk
 from tkinter import ttk
 
-class MetricsTable(ttk.Treeview):
+
+class InputTable(ttk.Treeview):
+    """Displays the list of processes added by the user (no metrics columns)."""
+
     def __init__(self, master):
-        cols = ("ID", "Arrival", "Burst", "Priority", "WT", "TAT", "RT")
+        cols = ("ID", "Arrival", "Burst", "Priority")
         super().__init__(master, columns=cols, show="headings", height=6)
         for col in cols:
             self.heading(col, text=col)
-            self.column(col, width=70, anchor="center")
+            self.column(col, width=100, anchor="center")
+
+
+class MetricsTable(ttk.Treeview):
+    """Displays per-process scheduling metrics including Completion Time."""
+
+    def __init__(self, master):
+        cols = ("ID", "Arrival", "Burst", "Priority", "CT", "WT", "TAT", "RT")
+        super().__init__(master, columns=cols, show="headings", height=6)
+        for col in cols:
+            self.heading(col, text=col)
+            self.column(col, width=65, anchor="center")
 
     def update_data(self, data):
-        self.delete(*self.get_children()) # Clear old data
+        """Populate the table from a list of per-process metric dicts."""
+        self.delete(*self.get_children())
         for row in data:
             self.insert("", "end", values=(
                 row['id'], row['arrival'], row['burst'],
-                row['priority'], row['wt'], row['tat'], row['rt']
+                row['priority'], row['ct'], row['wt'], row['tat'], row['rt']
             ))
 
+
 class GanttChart(tk.Canvas):
+    """Draws a horizontal Gantt chart from a list of execution segments."""
+
+    PROCESS_COLORS = [
+        "#6fa8dc", "#93c47d", "#e06666", "#f6b26b",
+        "#8e7cc3", "#c27ba0", "#76a5af", "#d5a6bd",
+    ]
+    IDLE_COLOR = "#d9d9d9"
+
     def __init__(self, master, **kwargs):
-        kwargs.setdefault('height', 120)
+        kwargs.setdefault('height', 130)
         kwargs.setdefault('bg', 'white')
         super().__init__(master, **kwargs)
-        self.colors = ["#add8e6", "#90ee90", "#ffb6c1", "#ffffe0", "#e6e6fa", "#ffdab9"]
 
-    def draw(self, schedule, title):
+    def draw(self, gantt_segments, title):
+        """Draws the Gantt chart from a list of {'id', 'start', 'end'} dicts.
+
+        Segments with id == 'Idle' are drawn in grey with an 'Idle' label.
+        """
         self.delete("all")
         self.create_text(400, 15, text=title, font=("Arial", 12, "bold"))
 
-        if not schedule:
+        if not gantt_segments:
             return
 
-        # Calculate dynamic scaling to fit the canvas width
-        total_time = max([p['end'] for p in schedule])
-        scale = 700 / max(total_time, 1) # Prevent divide by zero
+        total_time = max(seg['end'] for seg in gantt_segments)
+        scale = 700 / max(total_time, 1)
 
-        x, y, height = 50, 40, 40
+        y, bar_h = 40, 40
         color_map = {}
         c_idx = 0
 
-        for p in schedule:
-            pid = p['id']
-            if pid not in color_map:
-                color_map[pid] = self.colors[c_idx % len(self.colors)]
-                c_idx += 1
+        for seg in gantt_segments:
+            pid = seg['id']
+            start_x = 50 + seg['start'] * scale
+            width = (seg['end'] - seg['start']) * scale
 
-            width = (p['end'] - p['start']) * scale
-            start_x = 50 + (p['start'] * scale)
+            if pid == 'Idle':
+                fill = self.IDLE_COLOR
+            else:
+                if pid not in color_map:
+                    color_map[pid] = self.PROCESS_COLORS[c_idx % len(self.PROCESS_COLORS)]
+                    c_idx += 1
+                fill = color_map[pid]
 
-            self.create_rectangle(start_x, y, start_x + width, y + height, fill=color_map[pid])
-            self.create_text(start_x + width/2, y + height/2, text=pid)
-            self.create_text(start_x, y + height + 15, text=str(p['start']))
+            self.create_rectangle(
+                start_x, y, start_x + width, y + bar_h,
+                fill=fill, outline="black"
+            )
+            self.create_text(
+                start_x + width / 2, y + bar_h / 2,
+                text=pid, font=("Arial", 9)
+            )
+            # Start-time label below the bar
+            self.create_text(
+                start_x, y + bar_h + 15,
+                text=str(int(seg['start'])), font=("Arial", 8)
+            )
 
-        last_end = max([p['end'] for p in schedule])
-        self.create_text(50 + (last_end * scale), y + height + 15, text=str(last_end))
+        # Final end-time label
+        last_end = max(seg['end'] for seg in gantt_segments)
+        self.create_text(
+            50 + last_end * scale, y + bar_h + 15,
+            text=str(int(last_end)), font=("Arial", 8)
+        )

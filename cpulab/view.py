@@ -3,24 +3,25 @@ from tkinter import ttk, messagebox
 
 from cpulab.validator import validate_input
 from cpulab.models import Scheduler
-from cpulab.charts import MetricsTable, GanttChart
+from cpulab.charts import MetricsTable, InputTable, GanttChart
+
 
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("CPU Lab - SJF vs Priority")
-        self.root.geometry("850x650")
+        self.root.title("CPU Lab — SRTF vs Preemptive Priority")
+        self.root.geometry("900x700")
+        self.root.minsize(850, 650)
 
         self.processes = []
-
         self.setup_ui()
 
     def setup_ui(self):
-        # Top Input Frame
+        # --- Input Panel ---
         input_frame = tk.LabelFrame(self.root, text="Input Panel")
         input_frame.pack(fill="x", padx=10, pady=5)
 
-        tk.Label(input_frame, text="Process ID:").grid(row=0, column=0, padx=5)
+        tk.Label(input_frame, text="Process ID:").grid(row=0, column=0, padx=5, pady=5)
         self.entry_id = tk.Entry(input_frame, width=10)
         self.entry_id.grid(row=0, column=1)
 
@@ -36,28 +37,38 @@ class App:
         self.entry_pri = tk.Entry(input_frame, width=10)
         self.entry_pri.grid(row=0, column=7)
 
-        tk.Button(input_frame, text="Add Process", command=self.add_process).grid(row=0, column=8, padx=10, pady=5)
+        # Single set of action buttons (no duplicate)
+        button_frame = tk.Frame(input_frame)
+        button_frame.grid(row=0, column=8, padx=10)
 
-        # Process List Table
-        self.list_table = MetricsTable(self.root)
+        tk.Button(button_frame, text="Add Process",
+                  command=self.add_process, bg="#e1f5fe").pack(side="left", padx=2)
+        tk.Button(button_frame, text="Remove Selected",
+                  command=self.remove_selected, bg="#ffebee").pack(side="left", padx=2)
+        tk.Button(button_frame, text="Restart All",
+                  command=self.restart_simulation, bg="#f5f5f5").pack(side="left", padx=2)
+
+        # --- Process List (input-only columns, no metric columns) ---
+        self.list_table = InputTable(self.root)
         self.list_table.pack(fill="x", padx=10, pady=5)
 
-        # Run Button
-        tk.Button(self.root, text="Run Simulation & Compare", bg="lightgreen", command=self.run_simulation).pack(pady=5)
+        # --- Run Button ---
+        tk.Button(self.root, text="Run Simulation & Compare",
+                  bg="lightgreen", command=self.run_simulation).pack(pady=5)
 
-        # Tabs for Results
+        # --- Result Tabs ---
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Tab 1: SJF Results
+        # Tab 1: SRTF
         self.tab_sjf = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_sjf, text="SJF Results")
+        self.notebook.add(self.tab_sjf, text="SRTF Results")
         self.sjf_chart = GanttChart(self.tab_sjf)
         self.sjf_chart.pack(fill="x")
         self.sjf_table = MetricsTable(self.tab_sjf)
         self.sjf_table.pack(fill="x", pady=10)
 
-        # Tab 2: Priority Results
+        # Tab 2: Priority
         self.tab_pri = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_pri, text="Priority Results")
         self.pri_chart = GanttChart(self.tab_pri)
@@ -65,64 +76,27 @@ class App:
         self.pri_table = MetricsTable(self.tab_pri)
         self.pri_table.pack(fill="x", pady=10)
 
-        # Tab 3: Conclusion
+        # Tab 3: Comparison & Conclusion
         self.tab_conc = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_conc, text="Comparison & Conclusion")
-        self.text_conc = tk.Text(self.tab_conc, height=15, wrap="word", font=("Arial", 11))
+        self.text_conc = tk.Text(self.tab_conc, height=15, wrap="word",
+                                 font=("Arial", 11))
         self.text_conc.pack(fill="both", expand=True, padx=10, pady=10)
-        button_frame = tk.Frame(input_frame)
-        button_frame.grid(row=0, column=9, padx=10)
 
-        tk.Button(button_frame, text="Add Process", command=self.add_process, bg="#e1f5fe").pack(side="left", padx=2)
-        tk.Button(button_frame, text="Remove Selected", command=self.remove_selected, bg="#ffebee").pack(side="left", padx=2)
-        tk.Button(button_frame, text="Restart All", command=self.restart_simulation, bg="#f5f5f5").pack(side="left", padx=2)
-
-    def restart_simulation(self):
-        confirm = messagebox.askyesno("Confirm Restart", "This will clear all processes and results. Continue?")
-        if confirm:
-            # 1. Clear the data list
-            self.processes = []
-
-            # 2. Clear all UI tables
-            self.list_table.delete(*self.list_table.get_children())
-            self.sjf_table.delete(*self.sjf_table.get_children())
-            self.pri_table.delete(*self.pri_table.get_children())
-
-            # 3. Clear the Gantt charts
-            self.sjf_chart.delete("all")
-            self.pri_chart.delete("all")
-
-            # 4. Clear the Conclusion text
-            self.text_conc.delete("1.0", "end")
-
-            # 5. Reset entries
-            for entry in (self.entry_id, self.entry_arr, self.entry_brt, self.entry_pri):
-                entry.delete(0, 'end')
-
-            self.entry_id.focus()
-    def remove_selected(self):
-        selected_item = self.list_table.selection()
-        if not selected_item:
-            messagebox.showwarning("Selection Error", "Please select a process from the table to remove.")
-            return
-
-        for item in selected_item:
-            # Get the Process ID from the selected row
-            values = self.list_table.item(item, "values")
-            pid_to_remove = values[0]
-
-            # Remove from our data list
-            self.processes = [p for p in self.processes if p['id'] != pid_to_remove]
-
-            # Remove from the UI table
-            self.list_table.delete(item)
+    # ------------------------------------------------------------------ #
+    #  Process management                                                 #
+    # ------------------------------------------------------------------ #
 
     def add_process(self):
-        pid = self.entry_id.get()
+        pid = self.entry_id.get().strip()
         existing_ids = [p['id'] for p in self.processes]
 
         is_valid, result = validate_input(
-            pid, self.entry_arr.get(), self.entry_brt.get(), self.entry_pri.get(), existing_ids
+            pid,
+            self.entry_arr.get().strip(),
+            self.entry_brt.get().strip(),
+            self.entry_pri.get().strip(),
+            existing_ids,
         )
 
         if not is_valid:
@@ -130,49 +104,149 @@ class App:
             return
 
         self.processes.append(result)
-        self.list_table.insert("", "end", values=(result['id'], result['arrival'], result['burst'], result['priority'], "-", "-", "-"))
+        self.list_table.insert("", "end", values=(
+            result['id'], result['arrival'], result['burst'], result['priority']
+        ))
 
-        # Clear inputs
         for entry in (self.entry_id, self.entry_arr, self.entry_brt, self.entry_pri):
             entry.delete(0, 'end')
+        self.entry_id.focus()
+
+    def remove_selected(self):
+        selected_item = self.list_table.selection()
+        if not selected_item:
+            messagebox.showwarning("Selection Error",
+                                   "Please select a process from the table to remove.")
+            return
+
+        for item in selected_item:
+            values = self.list_table.item(item, "values")
+            pid_to_remove = values[0]
+            self.processes = [p for p in self.processes if p['id'] != pid_to_remove]
+            self.list_table.delete(item)
+
+    def restart_simulation(self):
+        if not messagebox.askyesno("Confirm Restart",
+                                   "This will clear all processes and results. Continue?"):
+            return
+
+        self.processes = []
+        self.list_table.delete(*self.list_table.get_children())
+        self.sjf_table.delete(*self.sjf_table.get_children())
+        self.pri_table.delete(*self.pri_table.get_children())
+        self.sjf_chart.delete("all")
+        self.pri_chart.delete("all")
+        self.text_conc.delete("1.0", "end")
+
+        for entry in (self.entry_id, self.entry_arr, self.entry_brt, self.entry_pri):
+            entry.delete(0, 'end')
+        self.entry_id.focus()
+
+    # ------------------------------------------------------------------ #
+    #  Simulation                                                         #
+    # ------------------------------------------------------------------ #
 
     def run_simulation(self):
         if not self.processes:
             messagebox.showwarning("Warning", "Please add at least one process.")
             return
 
-        # 1. Run Algorithms
-        sjf_res = Scheduler.run_sjf(self.processes)
-        pri_res = Scheduler.run_priority(self.processes)
+        # 1. Run both preemptive algorithms on the same workload
+        sjf_gantt, sjf_metrics = Scheduler.run_srtf(self.processes)
+        pri_gantt, pri_metrics = Scheduler.run_priority(self.processes)
 
-        # 2. Update Charts & Tables
-        self.sjf_chart.draw(sjf_res, "SJF Gantt Chart")
-        self.sjf_table.update_data(sjf_res)
+        # 2. Draw Gantt charts & populate metrics tables
+        self.sjf_chart.draw(sjf_gantt, "SRTF Gantt Chart")
+        self.sjf_table.update_data(sjf_metrics)
 
-        self.pri_chart.draw(pri_res, "Priority Gantt Chart")
-        self.pri_table.update_data(pri_res)
+        self.pri_chart.draw(pri_gantt, "Priority Gantt Chart")
+        self.pri_table.update_data(pri_metrics)
 
-        # 3. Calculate Averages & Generate Conclusion
-        s_wt, s_tat, _ = Scheduler.calculate_metrics(sjf_res)
-        p_wt, p_tat, _ = Scheduler.calculate_metrics(pri_res)
+        # 3. Calculate averages & generate conclusion
+        s_wt, s_tat, s_rt = Scheduler.calculate_metrics(sjf_metrics)
+        p_wt, p_tat, p_rt = Scheduler.calculate_metrics(pri_metrics)
 
-        self.generate_conclusion(s_wt, s_tat, p_wt, p_tat)
+        self.generate_conclusion(s_wt, s_tat, s_rt,
+                                 p_wt, p_tat, p_rt,
+                                 sjf_metrics, pri_metrics)
 
-        # Switch to SJF tab automatically
         self.notebook.select(self.tab_sjf)
 
-    def generate_conclusion(self, s_wt, s_tat, p_wt, p_tat):
+    # ------------------------------------------------------------------ #
+    #  Conclusion                                                         #
+    # ------------------------------------------------------------------ #
+
+    def generate_conclusion(self, s_wt, s_tat, s_rt,
+                            p_wt, p_tat, p_rt,
+                            sjf_metrics, pri_metrics):
         self.text_conc.delete("1.0", "end")
 
-        winner = "SJF" if s_wt < p_wt else ("Priority" if p_wt < s_wt else "Tie")
+        def label(s_val, p_val):
+            if s_val < p_val:
+                return "SRTF"
+            elif p_val < s_val:
+                return "Priority"
+            return "Tie"
 
-        conclusion = f"""COMPARISON SUMMARY:
-----------------------------------------
-SJF Averages      -> WT: {s_wt} | TAT: {s_tat}
-Priority Averages -> WT: {p_wt} | TAT: {p_tat}
+        wt_winner = label(s_wt, p_wt)
+        tat_winner = label(s_tat, p_tat)
+        rt_winner = label(s_rt, p_rt)
 
-FINAL CONCLUSION:
-----------------------------------------
-Based on the tested workload, {winner} performed better in terms of Average Waiting Time.
-"""
-        self.text_conc.insert("end", conclusion)
+        # Fairness indicator: maximum waiting time experienced by any process
+        max_wt_sjf = max(p['wt'] for p in sjf_metrics)
+        max_wt_pri = max(p['wt'] for p in pri_metrics)
+        fairer = label(max_wt_sjf, max_wt_pri)
+
+        # Determine overall recommendation
+        scores = {"SRTF": 0, "Priority": 0}
+        for w in (wt_winner, tat_winner, rt_winner):
+            if w in scores:
+                scores[w] += 1
+        if scores["SRTF"] > scores["Priority"]:
+            recommendation = "SRTF"
+        elif scores["Priority"] > scores["SRTF"]:
+            recommendation = "Priority"
+        else:
+            recommendation = "neither (tied overall)"
+
+        text = (
+            "-----------------------------------------------\n"
+            "              COMPARISON SUMMARY\n"
+            "-----------------------------------------------\n"
+            "\n"
+            f"  Metric              SRTF        Priority     Winner\n"
+            f"  ------------------  ----------  ----------   ----------\n"
+            f"  Avg Waiting Time    {s_wt:<10}  {p_wt:<10}   {wt_winner}\n"
+            f"  Avg Turnaround      {s_tat:<10}  {p_tat:<10}   {tat_winner}\n"
+            f"  Avg Response Time   {s_rt:<10}  {p_rt:<10}   {rt_winner}\n"
+            f"  Max Waiting Time    {max_wt_sjf:<10}  {max_wt_pri:<10}   {fairer} (fairer)\n"
+            "\n"
+            "-----------------------------------------------\n"
+            "              FINAL CONCLUSION\n"
+            "-----------------------------------------------\n"
+            "\n"
+        )
+
+        # Analysis paragraphs
+        text += f"- Waiting Time:  {wt_winner} achieved a lower average waiting time "
+        text += f"({s_wt} vs {p_wt}).\n"
+        text += f"- Turnaround:    {tat_winner} achieved a lower average turnaround time "
+        text += f"({s_tat} vs {p_tat}).\n"
+        text += f"- Response Time: {rt_winner} gave processes CPU access sooner "
+        text += f"({s_rt} vs {p_rt}).\n\n"
+
+        text += f"- Fairness:      {fairer} was fairer — its worst-case wait was "
+        text += f"{min(max_wt_sjf, max_wt_pri)} vs {max(max_wt_sjf, max_wt_pri)}.\n"
+
+        if max_wt_sjf > 2 * s_wt or max_wt_pri > 2 * p_wt:
+            text += "- Starvation Risk: A large gap between max and average WT "
+            text += "suggests possible starvation for at least one process.\n"
+
+        text += (
+            f"\n- Recommendation: For this workload, {recommendation} "
+            f"is the better choice overall.\n"
+            f"  SRTF minimises wait for short-burst jobs but may starve long ones.\n"
+            f"  Priority favours urgent tasks but may delay low-priority work.\n"
+        )
+
+        self.text_conc.insert("end", text)
