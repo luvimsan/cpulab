@@ -3,7 +3,6 @@ from tkinter import ttk
 
 
 class InputTable(ttk.Treeview):
-    """Displays the list of processes added by the user (no metrics columns)."""
 
     def __init__(self, master):
         cols = ("ID", "Arrival", "Burst", "Priority")
@@ -14,7 +13,6 @@ class InputTable(ttk.Treeview):
 
 
 class MetricsTable(ttk.Treeview):
-    """Displays per-process scheduling metrics including Completion Time."""
 
     def __init__(self, master):
         cols = ("ID", "Arrival", "Burst", "Priority", "CT", "WT", "TAT", "RT")
@@ -24,7 +22,6 @@ class MetricsTable(ttk.Treeview):
             self.column(col, width=65, anchor="center")
 
     def update_data(self, data):
-        """Populate the table from a list of per-process metric dicts."""
         self.delete(*self.get_children())
         for row in data:
             self.insert("", "end", values=(
@@ -34,7 +31,6 @@ class MetricsTable(ttk.Treeview):
 
 
 class GanttChart(tk.Canvas):
-    """Draws a horizontal Gantt chart from a list of execution segments."""
 
     PROCESS_COLORS = [
         "#6fa8dc", "#93c47d", "#e06666", "#f6b26b",
@@ -48,10 +44,6 @@ class GanttChart(tk.Canvas):
         super().__init__(master, **kwargs)
 
     def draw(self, gantt_segments, title):
-        """Draws the Gantt chart from a list of {'id', 'start', 'end'} dicts.
-
-        Segments with id == 'Idle' are drawn in grey with an 'Idle' label.
-        """
         self.delete("all")
         self.create_text(400, 15, text=title, font=("Arial", 12, "bold"))
 

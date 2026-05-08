@@ -1,9 +1,7 @@
 class Scheduler:
-    """Preemptive CPU scheduling simulator for SRTF and Priority."""
 
     @staticmethod
     def calculate_metrics(process_metrics):
-        """Calculates average WT, TAT, and RT from per-process metrics."""
         if not process_metrics:
             return 0, 0, 0
         n = len(process_metrics)
@@ -14,12 +12,6 @@ class Scheduler:
 
     @staticmethod
     def run_srtf(processes):
-        """Preemptive Shortest Job First (Shortest Remaining Time First).
-
-        Preempts the running process whenever a newly arrived process
-        has a shorter remaining burst time.
-        Tie-breaking: shorter remaining time wins; if equal, earlier arrival wins.
-        """
         return Scheduler._simulate_preemptive(
             processes,
             key_func=lambda p: (p['remaining'], p['arrival'])
@@ -27,12 +19,6 @@ class Scheduler:
 
     @staticmethod
     def run_priority(processes):
-        """Preemptive Priority Scheduling (Lower Number = Higher Priority).
-
-        Preempts the running process whenever a newly arrived process
-        has a higher priority (lower priority number).
-        Tie-breaking: lower priority number wins; if equal, earlier arrival wins.
-        """
         return Scheduler._simulate_preemptive(
             processes,
             key_func=lambda p: (p['priority'], p['arrival'])
@@ -40,20 +26,6 @@ class Scheduler:
 
     @staticmethod
     def _simulate_preemptive(processes, key_func):
-        """Event-driven preemptive scheduling simulation.
-
-        At each decision point (process arrival or completion), the scheduler
-        picks the best candidate from the ready queue and runs it until the
-        next event forces a re-evaluation.
-
-        Returns:
-            gantt_segments: list of {'id', 'start', 'end'} dicts
-                            (includes 'Idle' segments for CPU idle periods)
-            process_metrics: list of per-process dicts with
-                             'id', 'arrival', 'burst', 'priority',
-                             'ct', 'tat', 'wt', 'rt'
-        """
-        # Deep copy each process and add tracking fields
         procs = []
         for p in processes:
             procs.append({
