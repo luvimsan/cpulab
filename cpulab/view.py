@@ -10,7 +10,7 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("CPU Lab — SRTF vs Preemptive Priority")
-        self.root.geometry("900x700")
+        self.root.geometry("1300x700")
         self.root.minsize(850, 650)
 
         self.processes = []
@@ -33,7 +33,9 @@ class App:
         self.entry_brt = tk.Entry(input_frame, width=10)
         self.entry_brt.grid(row=0, column=5)
 
-        tk.Label(input_frame, text="Priority (Lower=Higher):").grid(row=0, column=6, padx=5)
+        tk.Label(input_frame, text="Priority (Lower=Higher):").grid(
+            row=0, column=6, padx=5
+        )
         self.entry_pri = tk.Entry(input_frame, width=10)
         self.entry_pri.grid(row=0, column=7)
 
@@ -41,20 +43,46 @@ class App:
         button_frame = tk.Frame(input_frame)
         button_frame.grid(row=0, column=8, padx=10)
 
-        tk.Button(button_frame, text="Add Process",
-                  command=self.add_process, bg="#e1f5fe").pack(side="left", padx=2)
-        tk.Button(button_frame, text="Remove Selected",
-                  command=self.remove_selected, bg="#ffebee").pack(side="left", padx=2)
-        tk.Button(button_frame, text="Restart All",
-                  command=self.restart_simulation, bg="#f5f5f5").pack(side="left", padx=2)
+        tk.Button(
+            button_frame, text="Add Process", command=self.add_process, bg="#e1f5fe"
+        ).pack(side="left", padx=2)
+        tk.Button(
+            button_frame,
+            text="Remove Selected",
+            command=self.remove_selected,
+            bg="#ffebee",
+        ).pack(side="left", padx=2)
+        tk.Button(
+            button_frame,
+            text="Restart All",
+            command=self.restart_simulation,
+            bg="#f5f5f5",
+        ).pack(side="left", padx=2)
+        self.tc = ttk.Combobox(
+            button_frame,
+            values=[
+                "Basic Mixed Workload",
+                "Conflict between Burst time and Priority",
+                "Starvation / Fairness",
+            ],
+            width=40,
+            state="readonly",
+        )
+        self.tc.set("Select a case scenario")
+        self.tc.pack(side="left", padx=2)
+        self.tc.bind("<<ComboboxSelected>>", self.test_scenarios)
 
         # --- Process List (input-only columns, no metric columns) ---
         self.list_table = InputTable(self.root)
         self.list_table.pack(fill="x", padx=10, pady=5)
 
         # --- Run Button ---
-        tk.Button(self.root, text="Run Simulation & Compare",
-                  bg="lightgreen", command=self.run_simulation).pack(pady=5)
+        tk.Button(
+            self.root,
+            text="Run Simulation & Compare",
+            bg="lightgreen",
+            command=self.run_simulation,
+        ).pack(pady=5)
 
         # --- Result Tabs ---
         self.notebook = ttk.Notebook(self.root)
@@ -79,8 +107,9 @@ class App:
         # Tab 3: Comparison & Conclusion
         self.tab_conc = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_conc, text="Comparison & Conclusion")
-        self.text_conc = tk.Text(self.tab_conc, height=15, wrap="word",
-                                 font=("Arial", 11))
+        self.text_conc = tk.Text(
+            self.tab_conc, height=15, wrap="word", font=("Arial", 11)
+        )
         self.text_conc.pack(fill="both", expand=True, padx=10, pady=10)
 
     # ------------------------------------------------------------------ #
@@ -89,7 +118,7 @@ class App:
 
     def add_process(self):
         pid = self.entry_id.get().strip()
-        existing_ids = [p['id'] for p in self.processes]
+        existing_ids = [p["id"] for p in self.processes]
 
         is_valid, result = validate_input(
             pid,
@@ -104,30 +133,39 @@ class App:
             return
 
         self.processes.append(result)
-        self.list_table.insert("", "end", values=(
-            result['id'], result['arrival'], result['burst'], result['priority']
-        ))
+        self.list_table.insert(
+            "",
+            "end",
+            values=(
+                result["id"],
+                result["arrival"],
+                result["burst"],
+                result["priority"],
+            ),
+        )
 
         for entry in (self.entry_id, self.entry_arr, self.entry_brt, self.entry_pri):
-            entry.delete(0, 'end')
+            entry.delete(0, "end")
         self.entry_id.focus()
 
     def remove_selected(self):
         selected_item = self.list_table.selection()
         if not selected_item:
-            messagebox.showwarning("Selection Error",
-                                   "Please select a process from the table to remove.")
+            messagebox.showwarning(
+                "Selection Error", "Please select a process from the table to remove."
+            )
             return
 
         for item in selected_item:
             values = self.list_table.item(item, "values")
             pid_to_remove = values[0]
-            self.processes = [p for p in self.processes if p['id'] != pid_to_remove]
+            self.processes = [p for p in self.processes if p["id"] != pid_to_remove]
             self.list_table.delete(item)
 
     def restart_simulation(self):
-        if not messagebox.askyesno("Confirm Restart",
-                                   "This will clear all processes and results. Continue?"):
+        if not messagebox.askyesno(
+            "Confirm Restart", "This will clear all processes and results. Continue?"
+        ):
             return
 
         self.processes = []
@@ -139,8 +177,55 @@ class App:
         self.text_conc.delete("1.0", "end")
 
         for entry in (self.entry_id, self.entry_arr, self.entry_brt, self.entry_pri):
-            entry.delete(0, 'end')
+            entry.delete(0, "end")
         self.entry_id.focus()
+
+    def load_proccess_to_table(self, processes):
+        self.list_table.delete(*self.list_table.get_children())
+        self.processes = []
+        self.processes.extend(processes)
+        for p in processes:
+            self.list_table.insert(
+                "",
+                "end",
+                values=(
+                    p["id"],
+                    p["arrival"],
+                    p["burst"],
+                    p["priority"],
+                ),
+            )
+
+    def test_scenarios(self, event=None):
+        if self.tc.get() == "Basic Mixed Workload":
+            basic_mixed = [
+                {"id": "P1", "arrival": 0, "burst": 8, "priority": 3},
+                {"id": "P2", "arrival": 1, "burst": 4, "priority": 1},
+                {"id": "P3", "arrival": 2, "burst": 9, "priority": 4},
+                {"id": "P4", "arrival": 3, "burst": 5, "priority": 2},
+                {"id": "P5", "arrival": 4, "burst": 2, "priority": 5},
+            ]
+            self.processes.extend(basic_mixed)
+            self.load_proccess_to_table(basic_mixed)
+        elif self.tc.get() == "Conflict between Burst time and Priority":
+            conflict_case = [
+                {"id": "P1", "arrival": 0, "burst": 2, "priority": 5},
+                {"id": "P2", "arrival": 0, "burst": 10, "priority": 1},
+                {"id": "P3", "arrival": 1, "burst": 3, "priority": 4},
+                {"id": "P4", "arrival": 2, "burst": 1, "priority": 3},
+            ]
+            self.processes.extend(conflict_case)
+            self.load_proccess_to_table(conflict_case)
+        elif self.tc.get() == "Starvation / Fairness":
+            starvation_case = [
+                {"id": "P1", "arrival": 0, "burst": 4, "priority": 3},
+                {"id": "P2", "arrival": 1, "burst": 2, "priority": 3},
+                {"id": "P3", "arrival": 2, "burst": 1, "priority": 3},
+                {"id": "P4", "arrival": 0, "burst": 15, "priority": 5},
+                {"id": "P5", "arrival": 3, "burst": 1, "priority": 5},
+            ]
+            self.processes.extend(starvation_case)
+            self.load_proccess_to_table(starvation_case)
 
     # ------------------------------------------------------------------ #
     #  Simulation                                                         #
@@ -166,9 +251,9 @@ class App:
         s_wt, s_tat, s_rt = Scheduler.calculate_metrics(sjf_metrics)
         p_wt, p_tat, p_rt = Scheduler.calculate_metrics(pri_metrics)
 
-        self.generate_conclusion(s_wt, s_tat, s_rt,
-                                 p_wt, p_tat, p_rt,
-                                 sjf_metrics, pri_metrics)
+        self.generate_conclusion(
+            s_wt, s_tat, s_rt, p_wt, p_tat, p_rt, sjf_metrics, pri_metrics
+        )
 
         self.notebook.select(self.tab_sjf)
 
@@ -176,9 +261,9 @@ class App:
     #  Conclusion                                                         #
     # ------------------------------------------------------------------ #
 
-    def generate_conclusion(self, s_wt, s_tat, s_rt,
-                            p_wt, p_tat, p_rt,
-                            sjf_metrics, pri_metrics):
+    def generate_conclusion(
+        self, s_wt, s_tat, s_rt, p_wt, p_tat, p_rt, sjf_metrics, pri_metrics
+    ):
         self.text_conc.delete("1.0", "end")
 
         def label(s_val, p_val):
@@ -193,8 +278,8 @@ class App:
         rt_winner = label(s_rt, p_rt)
 
         # Fairness indicator: maximum waiting time experienced by any process
-        max_wt_sjf = max(p['wt'] for p in sjf_metrics)
-        max_wt_pri = max(p['wt'] for p in pri_metrics)
+        max_wt_sjf = max(p["wt"] for p in sjf_metrics)
+        max_wt_pri = max(p["wt"] for p in pri_metrics)
         fairer = label(max_wt_sjf, max_wt_pri)
 
         # Determine overall recommendation
@@ -230,7 +315,9 @@ class App:
         # Analysis paragraphs
         text += f"- Waiting Time:  {wt_winner} achieved a lower average waiting time "
         text += f"({s_wt} vs {p_wt}).\n"
-        text += f"- Turnaround:    {tat_winner} achieved a lower average turnaround time "
+        text += (
+            f"- Turnaround:    {tat_winner} achieved a lower average turnaround time "
+        )
         text += f"({s_tat} vs {p_tat}).\n"
         text += f"- Response Time: {rt_winner} gave processes CPU access sooner "
         text += f"({s_rt} vs {p_rt}).\n\n"
