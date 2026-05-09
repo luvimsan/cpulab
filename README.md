@@ -28,9 +28,10 @@ python -m cpulab.main
 
 ## Team members
 
-1. Abdelrahman Ahmed
-2. Loaay Waheed
-3. Karim Mohamed
-4. Moaz Ahmed
-5. Ahmed Ibrahim
-6. Amr Mohamed
+1. Emad Amr
+2. Abdelrahman Ahmed
+3. Loaay Waheed
+4. Karim Mohamed
+5. Moaz Ahmed
+6. Ahmed Ibrahim
+7. Amr Mohamed
