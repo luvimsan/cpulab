@@ -9,7 +9,7 @@ from cpulab.charts import MetricsTable, InputTable, GanttChart
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("CPU Lab — SRTF vs Preemptive Priority")
+        self.root.title("CPU Lab — SJF vs Priority")
         self.root.geometry("1300x700")
         self.root.minsize(850, 650)
 
@@ -88,9 +88,9 @@ class App:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Tab 1: SRTF
+        # Tab 1: SJF
         self.tab_sjf = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_sjf, text="SRTF Results")
+        self.notebook.add(self.tab_sjf, text="SJF Results")
         self.sjf_chart = GanttChart(self.tab_sjf)
         self.sjf_chart.pack(fill="x")
         self.sjf_table = MetricsTable(self.tab_sjf)
@@ -237,11 +237,11 @@ class App:
             return
 
         # 1. Run both preemptive algorithms on the same workload
-        sjf_gantt, sjf_metrics = Scheduler.run_srtf(self.processes)
+        sjf_gantt, sjf_metrics = Scheduler.run_sjf(self.processes)
         pri_gantt, pri_metrics = Scheduler.run_priority(self.processes)
 
         # 2. Draw Gantt charts & populate metrics tables
-        self.sjf_chart.draw(sjf_gantt, "SRTF Gantt Chart")
+        self.sjf_chart.draw(sjf_gantt, "SJF Gantt Chart")
         self.sjf_table.update_data(sjf_metrics)
 
         self.pri_chart.draw(pri_gantt, "Priority Gantt Chart")
@@ -268,7 +268,7 @@ class App:
 
         def label(s_val, p_val):
             if s_val < p_val:
-                return "SRTF"
+                return "SJF"
             elif p_val < s_val:
                 return "Priority"
             return "Tie"
@@ -283,13 +283,13 @@ class App:
         fairer = label(max_wt_sjf, max_wt_pri)
 
         # Determine overall recommendation
-        scores = {"SRTF": 0, "Priority": 0}
+        scores = {"SJF": 0, "Priority": 0}
         for w in (wt_winner, tat_winner, rt_winner):
             if w in scores:
                 scores[w] += 1
-        if scores["SRTF"] > scores["Priority"]:
-            recommendation = "SRTF"
-        elif scores["Priority"] > scores["SRTF"]:
+        if scores["SJF"] > scores["Priority"]:
+            recommendation = "SJF"
+        elif scores["Priority"] > scores["SJF"]:
             recommendation = "Priority"
         else:
             recommendation = "neither (tied overall)"
@@ -299,7 +299,7 @@ class App:
             "              COMPARISON SUMMARY\n"
             "-----------------------------------------------\n"
             "\n"
-            f"  Metric              SRTF        Priority     Winner\n"
+            f"  Metric              SJF        Priority     Winner\n"
             f"  ------------------  ----------  ----------   ----------\n"
             f"  Avg Waiting Time    {s_wt:<10}  {p_wt:<10}   {wt_winner}\n"
             f"  Avg Turnaround      {s_tat:<10}  {p_tat:<10}   {tat_winner}\n"
@@ -322,7 +322,7 @@ class App:
         text += f"- Response Time: {rt_winner} gave processes CPU access sooner "
         text += f"({s_rt} vs {p_rt}).\n\n"
 
-        text += f"- Fairness:      {fairer} was fairer — its worst-case wait was "
+        text += f"- Fairness:      {fairer} was fairer - its worst-case wait was "
         text += f"{min(max_wt_sjf, max_wt_pri)} vs {max(max_wt_sjf, max_wt_pri)}.\n"
 
         if max_wt_sjf > 2 * s_wt or max_wt_pri > 2 * p_wt:
@@ -332,7 +332,7 @@ class App:
         text += (
             f"\n- Recommendation: For this workload, {recommendation} "
             f"is the better choice overall.\n"
-            f"  SRTF minimises wait for short-burst jobs but may starve long ones.\n"
+            f"  SJF minimises wait for short-burst jobs but may starve long ones.\n"
             f"  Priority favours urgent tasks but may delay low-priority work.\n"
         )
 
