@@ -1,5 +1,4 @@
 class Scheduler:
-
     @staticmethod
     def calculate_metrics(process_metrics):
         if not process_metrics:
@@ -44,13 +43,11 @@ class Scheduler:
         gantt = []
 
         while completed < n:
-            # Collect all processes that have arrived and are not yet finished
             available = [
                 p for p in procs if p["arrival"] <= current_time and p["remaining"] > 0
             ]
 
             if not available:
-                # CPU is idle — jump to the next earliest arrival
                 future = [p for p in procs if p["remaining"] > 0]
                 if not future:
                     break
@@ -59,16 +56,12 @@ class Scheduler:
                 current_time = next_time
                 continue
 
-            # Select the best process according to the algorithm's key
             available.sort(key=key_func)
             selected = available[0]
 
-            # Record first CPU access (used for Response Time)
             if selected["first_cpu"] == -1:
                 selected["first_cpu"] = current_time
 
-            # Determine how long to run before the next decision point:
-            #   either a new process arrives, or the selected process completes.
             future_arrivals = [
                 p["arrival"]
                 for p in procs
@@ -77,7 +70,6 @@ class Scheduler:
             next_arrival = min(future_arrivals) if future_arrivals else float("inf")
             run_until = min(current_time + selected["remaining"], next_arrival)
 
-            # Execute the selected process for the computed duration
             elapsed = run_until - current_time
             selected["remaining"] -= elapsed
 
@@ -90,7 +82,6 @@ class Scheduler:
                 selected["ct"] = current_time
                 completed += 1
 
-        # Merge consecutive Gantt segments that belong to the same process
         merged_gantt = []
         for seg in gantt:
             if merged_gantt and merged_gantt[-1]["id"] == seg["id"]:
@@ -98,7 +89,6 @@ class Scheduler:
             else:
                 merged_gantt.append(dict(seg))
 
-        # Build per-process metrics
         metrics = []
         for p in procs:
             ct = p["ct"]
