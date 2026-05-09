@@ -1,7 +1,6 @@
 def validate_input(pid, arrival, burst, priority, existing_ids):
     """Safely validates user input before adding a process."""
 
-    # Strip whitespace so that "   " is treated as empty
     pid = pid.strip()
     arrival = arrival.strip()
     burst = burst.strip()
