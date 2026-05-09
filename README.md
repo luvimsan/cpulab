@@ -1,7 +1,17 @@
+Must contain project description, requirements,
+
 # CPULab
 
-## Launch the program
+## Description
+
+## Requirements
+
+## Instruction to launch
 
 ```sh
 python -m cpulab.main
 ```
+
+
+## Team members
+1.

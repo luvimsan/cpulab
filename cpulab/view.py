@@ -17,9 +17,8 @@ class App:
         self.setup_ui()
 
     def setup_ui(self):
-        # --- Input Panel ---
         input_frame = tk.LabelFrame(self.root, text="Input Panel")
-        input_frame.pack(fill="x", padx=10, pady=5)
+        input_frame.pack(fill="x", padx=10, pady=8)
 
         tk.Label(input_frame, text="Process ID:").grid(row=0, column=0, padx=5, pady=5)
         self.entry_id = tk.Entry(input_frame, width=10)
@@ -39,7 +38,6 @@ class App:
         self.entry_pri = tk.Entry(input_frame, width=10)
         self.entry_pri.grid(row=0, column=7)
 
-        # Single set of action buttons (no duplicate)
         button_frame = tk.Frame(input_frame)
         button_frame.grid(row=0, column=8, padx=10)
 
@@ -72,11 +70,9 @@ class App:
         self.tc.pack(side="left", padx=2)
         self.tc.bind("<<ComboboxSelected>>", self.test_scenarios)
 
-        # --- Process List (input-only columns, no metric columns) ---
         self.list_table = InputTable(self.root)
         self.list_table.pack(fill="x", padx=10, pady=5)
 
-        # --- Run Button ---
         tk.Button(
             self.root,
             text="Run Simulation & Compare",
@@ -84,11 +80,9 @@ class App:
             command=self.run_simulation,
         ).pack(pady=5)
 
-        # --- Result Tabs ---
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Tab 1: SJF
         self.tab_sjf = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_sjf, text="SJF Results")
         self.sjf_chart = GanttChart(self.tab_sjf)
@@ -96,7 +90,6 @@ class App:
         self.sjf_table = MetricsTable(self.tab_sjf)
         self.sjf_table.pack(fill="x", pady=10)
 
-        # Tab 2: Priority
         self.tab_pri = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_pri, text="Priority Results")
         self.pri_chart = GanttChart(self.tab_pri)
@@ -104,17 +97,12 @@ class App:
         self.pri_table = MetricsTable(self.tab_pri)
         self.pri_table.pack(fill="x", pady=10)
 
-        # Tab 3: Comparison & Conclusion
         self.tab_conc = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_conc, text="Comparison & Conclusion")
         self.text_conc = tk.Text(
             self.tab_conc, height=15, wrap="word", font=("Arial", 11)
         )
         self.text_conc.pack(fill="both", expand=True, padx=10, pady=10)
-
-    # ------------------------------------------------------------------ #
-    #  Process management                                                 #
-    # ------------------------------------------------------------------ #
 
     def add_process(self):
         pid = self.entry_id.get().strip()
@@ -227,27 +215,20 @@ class App:
             self.processes.extend(starvation_case)
             self.load_proccess_to_table(starvation_case)
 
-    # ------------------------------------------------------------------ #
-    #  Simulation                                                         #
-    # ------------------------------------------------------------------ #
-
     def run_simulation(self):
         if not self.processes:
             messagebox.showwarning("Warning", "Please add at least one process.")
             return
 
-        # 1. Run both preemptive algorithms on the same workload
         sjf_gantt, sjf_metrics = Scheduler.run_sjf(self.processes)
         pri_gantt, pri_metrics = Scheduler.run_priority(self.processes)
 
-        # 2. Draw Gantt charts & populate metrics tables
         self.sjf_chart.draw(sjf_gantt, "SJF Gantt Chart")
         self.sjf_table.update_data(sjf_metrics)
 
         self.pri_chart.draw(pri_gantt, "Priority Gantt Chart")
         self.pri_table.update_data(pri_metrics)
 
-        # 3. Calculate averages & generate conclusion
         s_wt, s_tat, s_rt = Scheduler.calculate_metrics(sjf_metrics)
         p_wt, p_tat, p_rt = Scheduler.calculate_metrics(pri_metrics)
 
@@ -256,10 +237,6 @@ class App:
         )
 
         self.notebook.select(self.tab_sjf)
-
-    # ------------------------------------------------------------------ #
-    #  Conclusion                                                         #
-    # ------------------------------------------------------------------ #
 
     def generate_conclusion(
         self, s_wt, s_tat, s_rt, p_wt, p_tat, p_rt, sjf_metrics, pri_metrics
@@ -277,12 +254,10 @@ class App:
         tat_winner = label(s_tat, p_tat)
         rt_winner = label(s_rt, p_rt)
 
-        # Fairness indicator: maximum waiting time experienced by any process
         max_wt_sjf = max(p["wt"] for p in sjf_metrics)
         max_wt_pri = max(p["wt"] for p in pri_metrics)
         fairer = label(max_wt_sjf, max_wt_pri)
 
-        # Determine overall recommendation
         scores = {"SJF": 0, "Priority": 0}
         for w in (wt_winner, tat_winner, rt_winner):
             if w in scores:
@@ -312,7 +287,6 @@ class App:
             "\n"
         )
 
-        # Analysis paragraphs
         text += f"- Waiting Time:  {wt_winner} achieved a lower average waiting time "
         text += f"({s_wt} vs {p_wt}).\n"
         text += (
